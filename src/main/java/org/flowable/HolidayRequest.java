@@ -1,6 +1,7 @@
 package org.flowable;
 
 import org.flowable.engine.*;
+import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.impl.cfg.StandaloneProcessEngineConfiguration;
 import org.flowable.engine.repository.Deployment;
 import org.flowable.engine.repository.ProcessDefinition;
@@ -81,6 +82,23 @@ public class HolidayRequest {
         variables = new HashMap<>();
         variables.put("approved", approved);
         taskService.complete(task.getId(), variables);
+
+        // 查询历史记录
+        HistoryService historyService = processEngine.getHistoryService();
+        List<HistoricActivityInstance> activities =
+                historyService.createHistoricActivityInstanceQuery()
+                        // 仅针对一个特定流程实例的活动
+                        .processInstanceId(processInstance.getId())
+                        // 仅已完成的活动
+                        .finished()
+                        .orderByHistoricActivityInstanceEndTime().asc()
+                        .list();
+
+        for (HistoricActivityInstance activity : activities) {
+            System.out.println(activity.getActivityId() + " took "
+                    + activity.getDurationInMillis() + " milliseconds");
+        }
+
     }
 
 }
